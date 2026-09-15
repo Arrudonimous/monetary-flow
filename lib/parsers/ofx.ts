@@ -58,10 +58,16 @@ export function parseOfx(conteudo: string): TransacaoBruta[] {
     .map((t): TransacaoBruta | null => {
       if (!t.DTPOSTED || !t.TRNAMT) return null;
       const data = formatarDataOfx(t.DTPOSTED);
-      const valor = Number(t.TRNAMT);
-      if (!data || Number.isNaN(valor)) return null;
+      const trnamt = Number(t.TRNAMT);
+      if (!data || Number.isNaN(trnamt)) return null;
 
       const descricao = (t.MEMO || t.NAME || "Sem descrição").trim();
+
+      // Convenção padrão de OFX de cartão de crédito: uma compra (débito)
+      // vem como TRNAMT negativo, e um pagamento/estorno (crédito) vem
+      // como positivo. O formato do vault é o oposto — Saída (gasto) é
+      // positiva, e só estorno é negativo — então o sinal é invertido aqui.
+      const valor = -trnamt;
 
       return { data, descricao, valor, confianca: "alta" };
     })

@@ -1,36 +1,116 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Gastos
 
-## Getting Started
+Site pessoal de controle de gastos (acesso restrito, login único), com import
+de fatura/extrato (OFX/PDF), categorização automática e uma API de
+integração para sincronizar lançamentos com o vault Obsidian.
 
-First, run the development server:
+Stack: Next.js (App Router) + TypeScript + PostgreSQL (Prisma) + Auth.js.
+
+## Setup local
+
+1. Instale as dependências:
+
+   ```bash
+   npm install
+   ```
+
+2. Copie `.env.example` para `.env` e preencha:
+   - `DATABASE_URL` / `DIRECT_URL`: connection strings do Postgres (veja
+     "Banco de dados" abaixo — local ou Neon).
+   - `AUTH_SECRET`: gere com `openssl rand -base64 32`.
+   - `SEED_USER_EMAIL` / `SEED_USER_PASSWORD`: credenciais do seu login.
+   - `INTEGRATION_API_KEY_PLAINTEXT`: chave usada pela integração com o
+     vault (se deixar em branco, o `seed` gera uma aleatória e imprime no
+     terminal — guarde-a, pois só aparece uma vez).
+
+3. Aplique as migrations e rode o seed (cria o usuário único, a API key e
+   as regras de categorização iniciais):
+
+   ```bash
+   npx prisma migrate deploy
+   npx prisma db seed
+   ```
+
+4. Suba o servidor de desenvolvimento:
+
+   ```bash
+   npm run dev
+   ```
+
+## Banco de dados
+
+**Opção A — Postgres local temporário (sem instalar nada):**
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npx prisma dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Isso sobe um Postgres local e imprime a `DATABASE_URL`/`DIRECT_URL` para
+colar no `.env`. Útil só para desenvolvimento — os dados não persistem
+entre reinícios do comando.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+**Opção B — Neon (usado em produção):**
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Crie um projeto em [neon.tech](https://neon.tech) (free tier).
+2. Copie as duas connection strings do painel: a *pooled* (com `-pooler`
+   no host) vai em `DATABASE_URL`, a *direct* vai em `DIRECT_URL`.
 
-## Learn More
+⚠️ A migration `prisma/migrations/20260915134711_init/migration.sql` foi
+editada manualmente para tornar o índice de `dedupe_hash` **parcial**
+(`WHERE status = 'ativo'`) — o Prisma não suporta índices parciais no
+schema. **Não rode `prisma migrate dev`** depois de editar o schema sem
+revisar o SQL gerado, ou essa condição pode ser perdida; use sempre
+`prisma migrate deploy` para aplicar migrations já existentes (é isso que
+os comandos abaixo e o deploy usam).
 
-To learn more about Next.js, take a look at the following resources:
+## Deploy (Vercel + Neon)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Crie o banco no Neon (veja acima).
+2. Importe o repositório na Vercel e configure as variáveis de ambiente
+   (`DATABASE_URL`, `DIRECT_URL`, `AUTH_SECRET`, `SEED_USER_EMAIL`,
+   `SEED_USER_PASSWORD`, `INTEGRATION_API_KEY_PLAINTEXT`) em Production.
+3. Rode as migrations contra o banco de produção (localmente, apontando
+   `.env` para as strings do Neon, ou via um passo de build):
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+   ```bash
+   npx prisma migrate deploy
+   npx prisma db seed
+   ```
 
-## Deploy on Vercel
+4. Depois do primeiro seed, você pode remover `SEED_USER_PASSWORD` e
+   `INTEGRATION_API_KEY_PLAINTEXT` das variáveis de ambiente — só o hash
+   fica salvo no banco, os valores em texto puro não são mais necessários
+   (guarde a API key gerada em outro lugar seguro).
+5. Deploy: `vercel deploy --prod` (ou push para o branch conectado).
+6. Teste o login em `/login` e a API de integração:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+   ```bash
+   curl -X POST https://SEU-DOMINIO/api/integration/transactions \
+     -H "Authorization: Bearer SUA_API_KEY" \
+     -H "Content-Type: application/json" \
+     -d '{"tipo":"Saída","valor":10,"categoria":"Alimentação","descricao":"teste","data":"2026-01-01"}'
+   ```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Integração com o vault Obsidian
+
+A API `/api/integration/transactions` (autenticada por `Authorization:
+Bearer <API_KEY>`, não pela sessão de usuário) é o ponto de sincronização
+com o vault:
+
+- `POST` cria um lançamento com `origem: "vault"`. Aceita `external_id`
+  para retry idempotente — reenviar o mesmo `external_id`/dados não cria
+  duplicata, retorna o registro existente com `duplicate: true`.
+- `GET ?since=<ISO>&limit=` retorna lançamentos criados pelo site ou por
+  import de fatura (`origem` site/import_fatura) desde o cursor `since`,
+  para o Claude Code no vault escrever as linhas `.md` correspondentes.
+  Nunca devolve lançamentos com `origem: "vault"`, para não ecoar de volta
+  o que o próprio vault enviou.
+
+O procedimento de sincronização em si (quando puxar, onde guardar o
+cursor `.sync-state.json`, como escrever as linhas Markdown) é operacional
+— vive como instrução no vault, não como código deste repositório. Veja o
+plano de implementação original para o desenho completo desse fluxo.
+
+**Limitação atual:** só criação sincroniza nos dois sentidos. Editar um
+lançamento depois (ex.: confirmar um checkbox no site) não atualiza a
+linha `.md` já escrita no vault — isso fica para uma iteração futura.
