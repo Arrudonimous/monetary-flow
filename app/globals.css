@@ -1,26 +1,108 @@
 @import "tailwindcss";
 
+/*
+  Direção visual: "livro-caixa" — um extrato/ledger financeiro, não um
+  dashboard SaaS genérico. Números em mono tabular (alinhamento real de
+  coluna), regras finas no lugar de cards com sombra, serifa só em títulos.
+*/
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --paper: #eef0ea;
+  --paper-raised: #ffffff;
+  --paper-sunken: #e4e7de;
+  --ink: #1f2a21;
+  --ink-muted: #5c6659;
+  --line: #d3d8c9;
+  --line-strong: #b7bfa9;
+  --forest: #2e6b4a;
+  --forest-strong: #1f4e36;
+  --forest-soft: #e1ebe2;
+  --oxide: #93412b;
+  --oxide-strong: #722f1f;
+  --oxide-soft: #f3e4dd;
+  --ochre: #a87a2e;
+  --ochre-soft: #f1e6d0;
+  --focus-ring: #1f4e36;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --paper: #161c17;
+    --paper-raised: #1e2620;
+    --paper-sunken: #10140f;
+    --ink: #eaeee5;
+    --ink-muted: #9aa38f;
+    --line: #333d31;
+    --line-strong: #48543f;
+    --forest: #6bb28c;
+    --forest-strong: #8fcaa8;
+    --forest-soft: #223129;
+    --oxide: #d98467;
+    --oxide-strong: #e6a186;
+    --oxide-soft: #34211c;
+    --ochre: #d6ac66;
+    --ochre-soft: #332a17;
+    --focus-ring: #8fcaa8;
   }
 }
 
+@theme inline {
+  --color-paper: var(--paper);
+  --color-paper-raised: var(--paper-raised);
+  --color-paper-sunken: var(--paper-sunken);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-forest: var(--forest);
+  --color-forest-strong: var(--forest-strong);
+  --color-forest-soft: var(--forest-soft);
+  --color-oxide: var(--oxide);
+  --color-oxide-strong: var(--oxide-strong);
+  --color-oxide-soft: var(--oxide-soft);
+  --color-ochre: var(--ochre);
+  --color-ochre-soft: var(--ochre-soft);
+
+  --font-display: var(--font-display);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+}
+
+* {
+  border-color: var(--line);
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+::selection {
+  background: var(--forest);
+  color: var(--paper-raised);
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.font-display {
+  font-family: var(--font-display);
+  font-feature-settings: "ss01";
+}
+
+.tabular {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

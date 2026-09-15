@@ -1,40 +1,35 @@
-import Link from "next/link";
 import { logoutAction } from "./actions";
-
-const NAV_ITEMS = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/lancamentos", label: "Lançamentos" },
-  { href: "/importar", label: "Importar" },
-  { href: "/regras", label: "Regras" },
-];
+import { NavTabs } from "./nav-tabs";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-full flex-1 flex-col">
-      <header className="border-b border-neutral-200 bg-white">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3">
-          <nav className="flex gap-4 text-sm font-medium">
-            {NAV_ITEMS.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="text-neutral-600 hover:text-neutral-900"
+      <header className="border-b border-line bg-paper-raised">
+        <div className="mx-auto max-w-5xl px-6">
+          <div className="flex items-center justify-between gap-6 py-4 md:py-0">
+            <div className="flex items-center gap-10">
+              <span className="font-display text-lg italic text-ink">
+                Gastos
+              </span>
+              <div className="hidden md:block">
+                <NavTabs />
+              </div>
+            </div>
+            <form action={logoutAction}>
+              <button
+                type="submit"
+                className="shrink-0 text-sm text-ink-muted hover:text-ink"
               >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-          <form action={logoutAction}>
-            <button
-              type="submit"
-              className="text-sm text-neutral-500 hover:text-neutral-900"
-            >
-              Sair
-            </button>
-          </form>
+                Sair
+              </button>
+            </form>
+          </div>
+          <div className="overflow-x-auto md:hidden">
+            <NavTabs />
+          </div>
         </div>
       </header>
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6">
+      <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-10">
         {children}
       </main>
     </div>

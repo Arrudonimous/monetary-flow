@@ -17,6 +17,7 @@ export function ToggleConfirmado({
       type="checkbox"
       defaultChecked={confirmado}
       disabled={pending}
+      className="size-4 accent-[var(--forest)] disabled:opacity-50"
       onChange={(e) => {
         const novoValor = e.target.checked;
         startTransition(() => {

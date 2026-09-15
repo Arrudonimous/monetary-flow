@@ -1,20 +1,24 @@
+import Link from "next/link";
 import {
   gastosPorCategoria,
   gastosPorFonte,
   top15Gastos,
   resumoPorMes,
 } from "@/lib/reports";
+import { formatarReal, formatarDataBR } from "@/lib/format";
+import { Amount } from "@/components/ui/Amount";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Button } from "@/components/ui/Button";
 
-function formatarReal(valor: number): string {
-  return valor.toLocaleString("pt-BR", {
-    style: "currency",
-    currency: "BRL",
+function nomeDoMes(mesIso: string): string {
+  const [ano, mes] = mesIso.split("-").map(Number);
+  const data = new Date(Date.UTC(ano, mes - 1, 1));
+  const nome = data.toLocaleDateString("pt-BR", {
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
   });
-}
-
-function formatarDataBR(iso: string): string {
-  const [ano, mes, dia] = iso.split("-");
-  return `${dia}/${mes}/${ano}`;
+  return nome.charAt(0).toUpperCase() + nome.slice(1);
 }
 
 export default async function DashboardPage() {
@@ -27,132 +31,170 @@ export default async function DashboardPage() {
 
   const mesAtual = new Date().toISOString().slice(0, 7);
   const resumoAtual = porMes.find((m) => m.mes === mesAtual);
+  const maxCategoria = Math.max(0, ...porCategoria.map((c) => c.total));
+  const maxFonte = Math.max(0, ...porFonte.map((f) => f.total));
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-14">
       <section>
-        <h1 className="text-xl font-semibold">Dashboard</h1>
+        <p className="font-display text-2xl italic text-ink">
+          {nomeDoMes(mesAtual)}
+        </p>
+
         {resumoAtual ? (
-          <div className="mt-3 grid grid-cols-3 gap-3">
-            <ResumoCard label="Entradas (mês)" valor={resumoAtual.entrada} />
-            <ResumoCard label="Saídas (mês)" valor={resumoAtual.saida} />
-            <ResumoCard label="Saldo (mês)" valor={resumoAtual.saldo} />
-          </div>
+          <>
+            <p className="tabular mt-3 text-5xl text-ink">
+              {formatarReal(resumoAtual.saldo)}
+            </p>
+            <p className="mt-2 text-sm text-ink-muted">
+              saldo do mês ·{" "}
+              <span className="tabular text-forest">
+                +{formatarReal(resumoAtual.entrada)}
+              </span>{" "}
+              entrou ·{" "}
+              <span className="tabular text-oxide">
+                {formatarReal(resumoAtual.saida)}
+              </span>{" "}
+              saiu
+            </p>
+          </>
         ) : (
-          <p className="mt-3 text-sm text-neutral-500">
-            Ainda sem lançamentos este mês.
-          </p>
+          <EmptyState
+            title="Nenhum lançamento neste mês ainda."
+            action={
+              <Link href="/lancamentos/novo">
+                <Button variant="secondary">Registrar o primeiro</Button>
+              </Link>
+            }
+          />
         )}
       </section>
 
-      <section className="grid gap-6 md:grid-cols-2">
-        <Cartao titulo="Maiores gastos por categoria">
-          <Tabela
-            colunas={["Categoria", "Total"]}
-            linhas={porCategoria.map((c) => [c.chave, formatarReal(c.total)])}
-          />
-        </Cartao>
-
-        <Cartao titulo="Maiores gastos por fonte">
-          <Tabela
-            colunas={["Fonte", "Total"]}
-            linhas={porFonte.map((f) => [f.chave, formatarReal(f.total)])}
-          />
-        </Cartao>
-      </section>
-
-      <section>
-        <Cartao titulo="Top 15 maiores gastos individuais">
-          <Tabela
-            colunas={["Data", "Categoria", "Descrição", "Valor"]}
-            linhas={top15.map((t) => [
-              formatarDataBR(t.data),
-              t.categoria,
-              t.descricao,
-              formatarReal(t.valor),
-            ])}
-          />
-        </Cartao>
-      </section>
-
-      <section>
-        <Cartao titulo="Resumo por mês">
-          <Tabela
-            colunas={["Mês", "Entradas", "Saídas", "Saldo"]}
-            linhas={porMes.map((m) => [
-              m.mes,
-              formatarReal(m.entrada),
-              formatarReal(m.saida),
-              formatarReal(m.saldo),
-            ])}
-          />
-        </Cartao>
-      </section>
-    </div>
-  );
-}
-
-function ResumoCard({ label, valor }: { label: string; valor: number }) {
-  return (
-    <div className="rounded-lg border border-neutral-200 bg-white p-4">
-      <p className="text-xs text-neutral-500">{label}</p>
-      <p className="mt-1 text-lg font-semibold">{formatarReal(valor)}</p>
-    </div>
-  );
-}
-
-function Cartao({
-  titulo,
-  children,
-}: {
-  titulo: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="rounded-lg border border-neutral-200 bg-white p-4">
-      <h2 className="mb-3 text-sm font-semibold text-neutral-700">
-        {titulo}
-      </h2>
-      {children}
-    </div>
-  );
-}
-
-function Tabela({
-  colunas,
-  linhas,
-}: {
-  colunas: string[];
-  linhas: string[][];
-}) {
-  if (linhas.length === 0) {
-    return <p className="text-sm text-neutral-500">Ainda sem lançamentos.</p>;
-  }
-
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-neutral-200 text-left text-neutral-500">
-            {colunas.map((c) => (
-              <th key={c} className="py-1 pr-4 font-medium">
-                {c}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {linhas.map((linha, i) => (
-            <tr key={i} className="border-b border-neutral-100 last:border-0">
-              {linha.map((valor, j) => (
-                <td key={j} className="py-1 pr-4">
-                  {valor}
-                </td>
+      <section className="grid gap-10 border-t border-line pt-10 md:grid-cols-2">
+        <div>
+          <h2 className="mb-3 text-sm font-medium text-ink-muted">
+            Por categoria
+          </h2>
+          {porCategoria.length === 0 ? (
+            <p className="text-sm text-ink-muted">Sem saídas registradas.</p>
+          ) : (
+            <ul className="divide-y divide-line">
+              {porCategoria.map((c) => (
+                <li key={c.chave} className="relative">
+                  <div
+                    aria-hidden
+                    className="absolute inset-y-0 left-0 bg-oxide-soft"
+                    style={{
+                      width: `${maxCategoria ? (c.total / maxCategoria) * 100 : 0}%`,
+                    }}
+                  />
+                  <div className="relative flex items-center justify-between py-2.5 text-sm">
+                    <span>{c.chave}</span>
+                    <Amount tipo="Saída" valor={c.total} />
+                  </div>
+                </li>
               ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+            </ul>
+          )}
+        </div>
+
+        <div>
+          <h2 className="mb-3 text-sm font-medium text-ink-muted">
+            Por fonte
+          </h2>
+          {porFonte.length === 0 ? (
+            <p className="text-sm text-ink-muted">Sem saídas registradas.</p>
+          ) : (
+            <ul className="divide-y divide-line">
+              {porFonte.map((f) => (
+                <li key={f.chave} className="relative">
+                  <div
+                    aria-hidden
+                    className="absolute inset-y-0 left-0 bg-oxide-soft"
+                    style={{
+                      width: `${maxFonte ? (f.total / maxFonte) * 100 : 0}%`,
+                    }}
+                  />
+                  <div className="relative flex items-center justify-between py-2.5 text-sm">
+                    <span>{f.chave}</span>
+                    <Amount tipo="Saída" valor={f.total} />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </section>
+
+      <section className="border-t border-line pt-10">
+        <h2 className="mb-3 text-sm font-medium text-ink-muted">
+          Maiores gastos individuais
+        </h2>
+        {top15.length === 0 ? (
+          <p className="text-sm text-ink-muted">Sem saídas registradas.</p>
+        ) : (
+          <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <tbody className="divide-y divide-line">
+              {top15.map((t) => (
+                <tr key={t.id}>
+                  <td className="tabular py-2.5 pr-4 text-ink-muted">
+                    {formatarDataBR(t.data)}
+                  </td>
+                  <td className="py-2.5 pr-4 text-ink-muted">
+                    {t.categoria}
+                  </td>
+                  <td className="py-2.5 pr-4">{t.descricao}</td>
+                  <td className="py-2.5 text-right">
+                    <Amount tipo="Saída" valor={t.valor} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          </div>
+        )}
+      </section>
+
+      <section className="border-t border-line pt-10">
+        <h2 className="mb-3 text-sm font-medium text-ink-muted">
+          Resumo por mês
+        </h2>
+        {porMes.length === 0 ? (
+          <p className="text-sm text-ink-muted">Sem lançamentos ainda.</p>
+        ) : (
+          <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-line text-left text-ink-muted">
+                <th className="py-2 pr-4 font-medium">Mês</th>
+                <th className="py-2 pr-4 text-right font-medium">Entradas</th>
+                <th className="py-2 pr-4 text-right font-medium">Saídas</th>
+                <th className="py-2 text-right font-medium">Saldo</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-line">
+              {[...porMes].reverse().map((m) => (
+                <tr key={m.mes}>
+                  <td className="py-2.5 pr-4">{nomeDoMes(m.mes)}</td>
+                  <td className="py-2.5 pr-4 text-right">
+                    <Amount tipo="Entrada" valor={m.entrada} />
+                  </td>
+                  <td className="py-2.5 pr-4 text-right">
+                    <Amount tipo="Saída" valor={m.saida} />
+                  </td>
+                  <td
+                    className={`tabular py-2.5 text-right ${m.saldo >= 0 ? "text-forest" : "text-oxide"}`}
+                  >
+                    {formatarReal(m.saldo)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          </div>
+        )}
+      </section>
     </div>
   );
 }

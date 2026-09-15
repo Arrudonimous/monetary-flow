@@ -2,12 +2,10 @@
 
 import { useState, useTransition } from "react";
 import { CATEGORIAS_SAIDA } from "@/lib/categories";
+import { formatarReal, formatarDataBR } from "@/lib/format";
+import { Button } from "@/components/ui/Button";
 import { confirmarImportAction } from "./actions";
 import type { ItemPreview } from "@/lib/import-pipeline";
-
-function formatarReal(valor: number): string {
-  return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-}
 
 type LinhaEditavel = ItemPreview & { incluir: boolean };
 
@@ -40,77 +38,73 @@ export function ImportPreview({
   const totalIncluidos = itens.filter((i) => i.incluir).length;
 
   return (
-    <div className="space-y-4">
-      <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-neutral-200 text-left text-neutral-500">
-              <th className="px-3 py-2 font-medium">Incluir</th>
-              <th className="px-3 py-2 font-medium">Data</th>
-              <th className="px-3 py-2 font-medium">Descrição</th>
-              <th className="px-3 py-2 font-medium">Categoria</th>
-              <th className="px-3 py-2 text-right font-medium">Valor</th>
-              <th className="px-3 py-2 font-medium">Status</th>
+    <div className="space-y-6 border-t border-line pt-6">
+      <div className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-line text-left text-ink-muted">
+            <th className="py-2 pr-3 font-medium" />
+            <th className="py-2 pr-4 font-medium">Data</th>
+            <th className="py-2 pr-4 font-medium">Descrição</th>
+            <th className="py-2 pr-4 font-medium">Categoria</th>
+            <th className="py-2 pr-4 text-right font-medium">Valor</th>
+            <th className="py-2 font-medium">Status</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-line">
+          {itens.map((item, i) => (
+            <tr key={i} className={item.incluir ? "" : "opacity-50"}>
+              <td className="py-2.5 pr-3">
+                <input
+                  type="checkbox"
+                  checked={item.incluir}
+                  onChange={(e) =>
+                    atualizarItem(i, { incluir: e.target.checked })
+                  }
+                  className="size-4 accent-[var(--forest)]"
+                />
+              </td>
+              <td className="tabular py-2.5 pr-4 text-ink-muted">
+                {formatarDataBR(item.data)}
+              </td>
+              <td className="py-2.5 pr-4">{item.descricao}</td>
+              <td className="py-2.5 pr-4">
+                <select
+                  value={item.categoria}
+                  onChange={(e) =>
+                    atualizarItem(i, { categoria: e.target.value })
+                  }
+                  className="rounded-sm border border-line-strong bg-paper-raised px-2 py-1 text-sm text-ink outline-none focus:border-forest"
+                >
+                  {CATEGORIAS_SAIDA.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </td>
+              <td className="tabular py-2.5 pr-4 text-right">
+                {formatarReal(item.valor)}
+              </td>
+              <td className="py-2.5 text-xs">
+                {item.possivelDuplicata ? (
+                  <span className="text-ochre">Possível duplicata</span>
+                ) : null}
+                {item.precisaRevisao ? (
+                  <span className="ml-2 text-ochre">Revisar</span>
+                ) : null}
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {itens.map((item, i) => (
-              <tr
-                key={i}
-                className="border-b border-neutral-100 last:border-0"
-              >
-                <td className="px-3 py-2">
-                  <input
-                    type="checkbox"
-                    checked={item.incluir}
-                    onChange={(e) =>
-                      atualizarItem(i, { incluir: e.target.checked })
-                    }
-                  />
-                </td>
-                <td className="px-3 py-2">{item.data}</td>
-                <td className="px-3 py-2">{item.descricao}</td>
-                <td className="px-3 py-2">
-                  <select
-                    value={item.categoria}
-                    onChange={(e) =>
-                      atualizarItem(i, { categoria: e.target.value })
-                    }
-                    className="rounded-md border border-neutral-300 px-1.5 py-1 text-sm"
-                  >
-                    {CATEGORIAS_SAIDA.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-                <td className="px-3 py-2 text-right">
-                  {formatarReal(item.valor)}
-                </td>
-                <td className="px-3 py-2 text-xs">
-                  {item.possivelDuplicata ? (
-                    <span className="text-amber-600">Possível duplicata</span>
-                  ) : null}
-                  {item.precisaRevisao ? (
-                    <span className="ml-2 text-amber-600">Revisar</span>
-                  ) : null}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+          ))}
+        </tbody>
+      </table>
       </div>
 
-      <button
-        onClick={confirmar}
-        disabled={pending || totalIncluidos === 0}
-        className="rounded-md bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-60"
-      >
+      <Button onClick={confirmar} disabled={pending || totalIncluidos === 0}>
         {pending
-          ? "Confirmando..."
+          ? "Confirmando…"
           : `Confirmar ${totalIncluidos} lançamento(s)`}
-      </button>
+      </Button>
     </div>
   );
 }

@@ -18,17 +18,16 @@ export default async function ImportPreviewPage({
   const itens = faturaImport.rawJson as unknown as ItemPreview[];
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="text-xl font-semibold">
-          Revisar import — {faturaImport.arquivoNome}
-        </h1>
-        <p className="text-sm text-neutral-500">
-          {faturaImport.status === "pendente"
-            ? "Revise as categorias, desmarque possíveis duplicatas e confirme."
-            : `Este import já foi ${faturaImport.status}.`}
-        </p>
-      </div>
+    <div className="space-y-2">
+      <p className="font-display text-2xl italic text-ink">
+        Revisar import
+      </p>
+      <p className="text-sm text-ink-muted">
+        {faturaImport.arquivoNome} ·{" "}
+        {faturaImport.status === "pendente"
+          ? "revise as categorias, desmarque duplicatas e confirme."
+          : `este import já foi ${faturaImport.status}.`}
+      </p>
 
       {faturaImport.status === "pendente" ? (
         <ImportPreview

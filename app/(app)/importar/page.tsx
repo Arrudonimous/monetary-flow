@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { FONTES } from "@/lib/categories";
+import { Button } from "@/components/ui/Button";
 
 export default function ImportarPage() {
   const router = useRouter();
@@ -36,23 +37,25 @@ export default function ImportarPage() {
   }
 
   return (
-    <div className="max-w-lg space-y-4">
-      <h1 className="text-xl font-semibold">Importar fatura/extrato</h1>
-      <p className="text-sm text-neutral-500">
-        OFX é o formato preferido (mais confiável). PDF é aceito, mas a
-        extração é melhor esforço — revise o preview antes de confirmar.
+    <div className="max-w-lg space-y-2">
+      <p className="font-display text-2xl italic text-ink">
+        Importar fatura
+      </p>
+      <p className="text-sm text-ink-muted">
+        OFX é o formato preferido — mais confiável que PDF. Você revisa cada
+        linha antes de confirmar.
       </p>
 
       <form
         onSubmit={onSubmit}
-        className="space-y-4 rounded-lg border border-neutral-200 bg-white p-4"
+        className="space-y-5 border-t border-line pt-6"
       >
-        <label className="block space-y-1 text-sm">
-          <span className="font-medium">Fonte</span>
+        <label className="block space-y-1.5 text-sm">
+          <span className="font-medium text-ink">Fonte</span>
           <select
             name="fonte"
             required
-            className="w-full rounded-md border border-neutral-300 px-2 py-1.5 text-sm"
+            className="w-full rounded-sm border border-line-strong bg-paper-raised px-3 py-2 text-sm text-ink outline-none focus:border-forest"
           >
             {FONTES.map((f) => (
               <option key={f} value={f}>
@@ -62,26 +65,22 @@ export default function ImportarPage() {
           </select>
         </label>
 
-        <label className="block space-y-1 text-sm">
-          <span className="font-medium">Arquivo (.ofx ou .pdf)</span>
+        <label className="block space-y-1.5 text-sm">
+          <span className="font-medium text-ink">Arquivo (.ofx ou .pdf)</span>
           <input
             type="file"
             name="arquivo"
             accept=".ofx,.pdf"
             required
-            className="w-full text-sm"
+            className="w-full text-sm text-ink-muted file:mr-3 file:rounded-sm file:border file:border-line-strong file:bg-paper-raised file:px-3 file:py-1.5 file:text-sm file:text-ink"
           />
         </label>
 
-        {erro ? <p className="text-sm text-red-600">{erro}</p> : null}
+        {erro ? <p className="text-sm text-oxide">{erro}</p> : null}
 
-        <button
-          type="submit"
-          disabled={enviando}
-          className="rounded-md bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-60"
-        >
-          {enviando ? "Processando..." : "Processar arquivo"}
-        </button>
+        <Button type="submit" disabled={enviando}>
+          {enviando ? "Processando…" : "Processar arquivo"}
+        </Button>
       </form>
     </div>
   );

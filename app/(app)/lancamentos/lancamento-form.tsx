@@ -6,9 +6,13 @@ import {
   CATEGORIAS_ENTRADA,
   FONTES,
 } from "@/lib/categories";
+import { Button } from "@/components/ui/Button";
 import type { FormState } from "./actions";
 
 const estadoInicial: FormState = { error: null };
+
+const fieldClass =
+  "w-full rounded-sm border border-line-strong bg-paper-raised px-3 py-2 text-sm text-ink outline-none focus:border-forest";
 
 export type ValoresIniciais = {
   tipo: "Saída" | "Entrada";
@@ -40,15 +44,15 @@ export function LancamentoForm({
   return (
     <form
       action={formAction}
-      className="space-y-4 rounded-lg border border-neutral-200 bg-white p-4"
+      className="space-y-6 border-t border-line pt-6"
     >
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-4">
         <Campo label="Tipo">
           <select
             name="tipo"
             value={tipo}
             onChange={(e) => setTipo(e.target.value as "Saída" | "Entrada")}
-            className="w-full rounded-md border border-neutral-300 px-2 py-1.5 text-sm"
+            className={fieldClass}
           >
             <option value="Saída">Saída</option>
             <option value="Entrada">Entrada</option>
@@ -62,7 +66,7 @@ export function LancamentoForm({
             step="0.01"
             required
             defaultValue={valoresIniciais?.valor}
-            className="w-full rounded-md border border-neutral-300 px-2 py-1.5 text-sm"
+            className={`${fieldClass} tabular`}
           />
         </Campo>
 
@@ -71,7 +75,7 @@ export function LancamentoForm({
             name="categoria"
             required
             defaultValue={valoresIniciais?.categoria}
-            className="w-full rounded-md border border-neutral-300 px-2 py-1.5 text-sm"
+            className={fieldClass}
           >
             {categorias.map((c) => (
               <option key={c} value={c}>
@@ -86,7 +90,7 @@ export function LancamentoForm({
             <select
               name="fonte"
               defaultValue={valoresIniciais?.fonte ?? undefined}
-              className="w-full rounded-md border border-neutral-300 px-2 py-1.5 text-sm"
+              className={fieldClass}
             >
               <option value="">—</option>
               {FONTES.map((f) => (
@@ -104,7 +108,7 @@ export function LancamentoForm({
             name="data"
             required
             defaultValue={valoresIniciais?.data}
-            className="w-full rounded-md border border-neutral-300 px-2 py-1.5 text-sm"
+            className={`${fieldClass} tabular`}
           />
         </Campo>
 
@@ -114,7 +118,7 @@ export function LancamentoForm({
               type="date"
               name="cobranca"
               defaultValue={valoresIniciais?.cobranca ?? undefined}
-              className="w-full rounded-md border border-neutral-300 px-2 py-1.5 text-sm"
+              className={`${fieldClass} tabular`}
             />
           </Campo>
         ) : null}
@@ -126,36 +130,41 @@ export function LancamentoForm({
           name="descricao"
           required
           defaultValue={valoresIniciais?.descricao}
-          className="w-full rounded-md border border-neutral-300 px-2 py-1.5 text-sm"
+          className={fieldClass}
         />
       </Campo>
 
-      <label className="flex items-center gap-2 text-sm">
+      <label className="flex items-center gap-2 text-sm text-ink-muted">
         <input
           type="checkbox"
           name="confirmado"
           defaultChecked={valoresIniciais?.confirmado}
+          className="size-4 accent-[var(--forest)]"
         />
         Já confirmado
       </label>
 
-      {state.error ? <p className="text-sm text-red-600">{state.error}</p> : null}
+      {state.error ? (
+        <p className="text-sm text-oxide">{state.error}</p>
+      ) : null}
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="rounded-md bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-60"
-      >
-        {pending ? "Salvando..." : submitLabel}
-      </button>
+      <Button type="submit" disabled={pending}>
+        {pending ? "Salvando…" : submitLabel}
+      </Button>
     </form>
   );
 }
 
-function Campo({ label, children }: { label: string; children: React.ReactNode }) {
+function Campo({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
-    <label className="block space-y-1 text-sm">
-      <span className="font-medium">{label}</span>
+    <label className="block space-y-1.5 text-sm">
+      <span className="font-medium text-ink">{label}</span>
       {children}
     </label>
   );

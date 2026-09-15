@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { tipoParaExterno } from "@/lib/transaction-format";
+import { Button } from "@/components/ui/Button";
 import { LancamentoForm } from "../lancamento-form";
 import { atualizarLancamento, descartarLancamento } from "../actions";
 
@@ -26,13 +27,15 @@ export default async function EditarLancamentoPage({
   };
 
   return (
-    <div className="max-w-lg space-y-4">
+    <div className="max-w-lg space-y-2">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Editar lançamento</h1>
+        <p className="font-display text-2xl italic text-ink">
+          Editar lançamento
+        </p>
         <form action={descartarLancamento.bind(null, transacao.id)}>
-          <button type="submit" className="text-sm text-red-600 hover:underline">
+          <Button type="submit" variant="danger">
             Descartar
-          </button>
+          </Button>
         </form>
       </div>
       <LancamentoForm
