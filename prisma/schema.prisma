@@ -1,0 +1,128 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum TipoTransacao {
+  Saida  @map("Saída")
+  Entrada
+
+  @@map("tipo_transacao")
+}
+
+enum OrigemTransacao {
+  site
+  vault
+  import_fatura
+
+  @@map("origem_transacao")
+}
+
+enum StatusTransacao {
+  ativo
+  descartado
+
+  @@map("status_transacao")
+}
+
+enum StatusFaturaImport {
+  pendente
+  confirmado
+  descartado
+
+  @@map("status_fatura_import")
+}
+
+enum TipoArquivoImport {
+  pdf
+  ofx
+
+  @@map("tipo_arquivo_import")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("users")
+}
+
+model Transaction {
+  id             String            @id @default(uuid())
+  tipo           TipoTransacao
+  valor          Decimal           @db.Decimal(12, 2)
+  categoria      String
+  fonte          String?
+  descricao      String
+  data           DateTime          @db.Date
+  cobranca       DateTime?         @db.Date
+  confirmado     Boolean           @default(false)
+  origem         OrigemTransacao
+  status         StatusTransacao   @default(ativo)
+  dedupeHash     String            @map("dedupe_hash")
+  externalId     String?           @map("external_id")
+  faturaImportId String?           @map("fatura_import_id")
+  faturaImport   FaturaImport?     @relation(fields: [faturaImportId], references: [id])
+  createdAt      DateTime          @default(now()) @map("created_at")
+  updatedAt      DateTime          @updatedAt @map("updated_at")
+
+  // NOTA: a migration 20260915134711_init edita esse índice manualmente para
+  // ser um índice único PARCIAL (`WHERE status = 'ativo'`), permitindo
+  // reaproveitar um dedupe_hash depois que a transação original é
+  // descartada. Prisma não suporta índice parcial nativamente — não rode
+  // `prisma migrate dev` sem revisar o SQL gerado, ou essa condição será
+  // perdida. Use sempre `prisma migrate deploy` em produção.
+  @@unique([dedupeHash], map: "uq_transactions_dedupe_hash_ativo")
+  @@index([data], map: "idx_transactions_data")
+  @@index([categoria], map: "idx_transactions_categoria")
+  @@index([updatedAt], map: "idx_transactions_updated_at")
+  @@index([externalId], map: "idx_transactions_external_id")
+  @@map("transactions")
+}
+
+model CategorizationRule {
+  id           String         @id @default(uuid())
+  palavraChave String         @map("palavra_chave")
+  tipo         TipoTransacao
+  categoria    String
+  prioridade   Int            @default(0)
+  ativo        Boolean        @default(true)
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+
+  @@map("categorization_rules")
+}
+
+model FaturaImport {
+  id           String              @id @default(uuid())
+  arquivoNome  String              @map("arquivo_nome")
+  tipoArquivo  TipoArquivoImport   @map("tipo_arquivo")
+  fonte        String
+  status       StatusFaturaImport  @default(pendente)
+  rawJson      Json                @map("raw_json")
+  createdAt    DateTime            @default(now()) @map("created_at")
+  confirmedAt  DateTime?           @map("confirmed_at")
+  transactions Transaction[]
+
+  @@map("fatura_imports")
+}
+
+model ApiKey {
+  id          String    @id @default(uuid())
+  label       String
+  keyHash     String    @unique @map("key_hash")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  lastUsedAt  DateTime? @map("last_used_at")
+  revokedAt   DateTime? @map("revoked_at")
+
+  @@map("api_keys")
+}
