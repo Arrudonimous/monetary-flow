@@ -21,15 +21,31 @@ function nomeDoMes(mesIso: string): string {
   return nome.charAt(0).toUpperCase() + nome.slice(1);
 }
 
-export default async function DashboardPage() {
+function rangeDoMes(mesIso: string): { desde: Date; ate: Date } {
+  const [ano, mes] = mesIso.split("-").map(Number);
+  return {
+    desde: new Date(Date.UTC(ano, mes - 1, 1)),
+    ate: new Date(Date.UTC(mes === 12 ? ano + 1 : ano, mes === 12 ? 0 : mes, 1)),
+  };
+}
+
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ periodo?: string }>;
+}) {
+  const { periodo } = await searchParams;
+  const periodoTudo = periodo === "tudo";
+
+  const mesAtual = new Date().toISOString().slice(0, 7);
+
   const [porCategoria, porFonte, top15, porMes] = await Promise.all([
-    gastosPorCategoria(),
-    gastosPorFonte(),
+    gastosPorCategoria(periodoTudo ? undefined : rangeDoMes(mesAtual)),
+    gastosPorFonte(periodoTudo ? undefined : rangeDoMes(mesAtual)),
     top15Gastos(),
     resumoPorMes(),
   ]);
 
-  const mesAtual = new Date().toISOString().slice(0, 7);
   const resumoAtual = porMes.find((m) => m.mes === mesAtual);
   const maxCategoria = Math.max(0, ...porCategoria.map((c) => c.total));
   const maxFonte = Math.max(0, ...porFonte.map((f) => f.total));
@@ -70,59 +86,93 @@ export default async function DashboardPage() {
         )}
       </section>
 
-      <section className="grid gap-10 border-t border-line pt-10 md:grid-cols-2">
-        <div>
-          <h2 className="mb-3 text-sm font-medium text-ink-muted">
-            Por categoria
+      <section className="border-t border-line pt-10">
+        <div className="mb-6 flex items-center justify-between">
+          <h2 className="text-sm font-medium text-ink-muted">
+            {periodoTudo ? "Todo o período" : nomeDoMes(mesAtual)}
           </h2>
-          {porCategoria.length === 0 ? (
-            <p className="text-sm text-ink-muted">Sem saídas registradas.</p>
-          ) : (
-            <ul className="divide-y divide-line">
-              {porCategoria.map((c) => (
-                <li key={c.chave} className="relative">
-                  <div
-                    aria-hidden
-                    className="absolute inset-y-0 left-0 bg-oxide-soft"
-                    style={{
-                      width: `${maxCategoria ? (c.total / maxCategoria) * 100 : 0}%`,
-                    }}
-                  />
-                  <div className="relative flex items-center justify-between py-2.5 text-sm">
-                    <span>{c.chave}</span>
-                    <Amount tipo="Saída" valor={c.total} />
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
+          <div className="flex gap-4 text-sm">
+            <Link
+              href="/dashboard"
+              className={
+                periodoTudo
+                  ? "text-ink-muted hover:text-ink"
+                  : "font-medium text-forest"
+              }
+            >
+              Este mês
+            </Link>
+            <Link
+              href="/dashboard?periodo=tudo"
+              className={
+                periodoTudo
+                  ? "font-medium text-forest"
+                  : "text-ink-muted hover:text-ink"
+              }
+            >
+              Todo o período
+            </Link>
+          </div>
         </div>
 
-        <div>
-          <h2 className="mb-3 text-sm font-medium text-ink-muted">
-            Por fonte
-          </h2>
-          {porFonte.length === 0 ? (
-            <p className="text-sm text-ink-muted">Sem saídas registradas.</p>
-          ) : (
-            <ul className="divide-y divide-line">
-              {porFonte.map((f) => (
-                <li key={f.chave} className="relative">
-                  <div
-                    aria-hidden
-                    className="absolute inset-y-0 left-0 bg-oxide-soft"
-                    style={{
-                      width: `${maxFonte ? (f.total / maxFonte) * 100 : 0}%`,
-                    }}
-                  />
-                  <div className="relative flex items-center justify-between py-2.5 text-sm">
-                    <span>{f.chave}</span>
-                    <Amount tipo="Saída" valor={f.total} />
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
+        <div className="grid gap-10 md:grid-cols-2">
+          <div>
+            <h3 className="mb-3 text-sm font-medium text-ink-muted">
+              Por categoria
+            </h3>
+            {porCategoria.length === 0 ? (
+              <p className="text-sm text-ink-muted">
+                Sem saídas neste período.
+              </p>
+            ) : (
+              <ul className="divide-y divide-line">
+                {porCategoria.map((c) => (
+                  <li key={c.chave} className="relative">
+                    <div
+                      aria-hidden
+                      className="absolute inset-y-0 left-0 bg-oxide-soft"
+                      style={{
+                        width: `${maxCategoria ? (c.total / maxCategoria) * 100 : 0}%`,
+                      }}
+                    />
+                    <div className="relative flex items-center justify-between py-2.5 text-sm">
+                      <span>{c.chave}</span>
+                      <Amount tipo="Saída" valor={c.total} />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <div>
+            <h3 className="mb-3 text-sm font-medium text-ink-muted">
+              Por fonte
+            </h3>
+            {porFonte.length === 0 ? (
+              <p className="text-sm text-ink-muted">
+                Sem saídas neste período.
+              </p>
+            ) : (
+              <ul className="divide-y divide-line">
+                {porFonte.map((f) => (
+                  <li key={f.chave} className="relative">
+                    <div
+                      aria-hidden
+                      className="absolute inset-y-0 left-0 bg-oxide-soft"
+                      style={{
+                        width: `${maxFonte ? (f.total / maxFonte) * 100 : 0}%`,
+                      }}
+                    />
+                    <div className="relative flex items-center justify-between py-2.5 text-sm">
+                      <span>{f.chave}</span>
+                      <Amount tipo="Saída" valor={f.total} />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
       </section>
 

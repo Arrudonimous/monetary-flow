@@ -6,13 +6,22 @@ const SAIDA_ATIVA = {
   tipo: TipoTransacao.Saida,
 };
 
+export type PeriodoRelatorio = { desde: Date; ate: Date } | undefined;
+
+function whereComPeriodo(periodo: PeriodoRelatorio) {
+  if (!periodo) return SAIDA_ATIVA;
+  return { ...SAIDA_ATIVA, data: { gte: periodo.desde, lt: periodo.ate } };
+}
+
 export type TotalPorChave = { chave: string; total: number };
 
 /** Equivalente ao bloco "Maiores gastos por categoria" do Index Gastos.md. */
-export async function gastosPorCategoria(): Promise<TotalPorChave[]> {
+export async function gastosPorCategoria(
+  periodo?: PeriodoRelatorio,
+): Promise<TotalPorChave[]> {
   const grupos = await prisma.transaction.groupBy({
     by: ["categoria"],
-    where: SAIDA_ATIVA,
+    where: whereComPeriodo(periodo),
     _sum: { valor: true },
   });
 
@@ -22,10 +31,12 @@ export async function gastosPorCategoria(): Promise<TotalPorChave[]> {
 }
 
 /** Equivalente ao bloco "Maiores gastos por fonte" do Index Gastos.md. */
-export async function gastosPorFonte(): Promise<TotalPorChave[]> {
+export async function gastosPorFonte(
+  periodo?: PeriodoRelatorio,
+): Promise<TotalPorChave[]> {
   const grupos = await prisma.transaction.groupBy({
     by: ["fonte"],
-    where: SAIDA_ATIVA,
+    where: whereComPeriodo(periodo),
     _sum: { valor: true },
   });
 
